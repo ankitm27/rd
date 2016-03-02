@@ -1,10 +1,6 @@
 package rd
 
-import (
-	"errors"
-
-	pd "github.com/kkdai/pd"
-)
+import "log"
 
 type Args struct {
 	A, B int
@@ -15,7 +11,6 @@ type PubRet struct {
 }
 
 type WorkQueue struct {
-	queueMap map[string]pd.PD
 }
 
 type PArgs struct {
@@ -28,6 +23,11 @@ type QArgs struct {
 }
 
 func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
+	log.Println("Got QueueDeclare: args=", *args, " total=", workQ)
+
+	retCh := PdQueue.Subscribe(args.QueueName)
+	workQ[args.QueueName] = retCh
+
 	return nil
 }
 
@@ -37,10 +37,10 @@ func (t *WorkQueue) Consume(args *Args, reply *int) error {
 }
 
 func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
-	if args.B == 0 {
-		return errors.New("divide by zero")
-	}
-	quo.Quo = args.A / args.B
-	quo.Rem = args.A % args.B
+	return nil
+}
+
+func (t *WorkQueue) ListQueue(args *int, reply *int) error {
+	*reply = len(PdQueue.ListTopics())
 	return nil
 }

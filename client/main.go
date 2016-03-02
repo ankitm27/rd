@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/rpc"
-)
 
-type Args struct {
-	A, B int
-}
+	rd "github.com/kkdai/rd"
+)
 
 func main() {
 
@@ -17,11 +15,19 @@ func main() {
 		log.Fatal("dialing:", err)
 	}
 	// Synchronous call
-	args := &Args{7, 8}
+	args1 := &rd.QArgs{QueueName: "Work1"}
 	var reply int
-	err = client.Call("Arith.Multiply", args, &reply)
+	err = client.Call("WorkQueue.QueueDeclare", args1, &reply)
 	if err != nil {
 		log.Fatal("arith error:", err)
 	}
-	fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
+	fmt.Println("WorkQueue: add1 ")
+
+	args2 := &rd.QArgs{QueueName: "Work2"}
+	err = client.Call("WorkQueue.QueueDeclare", args2, &reply)
+	if err != nil {
+		log.Fatal("arith error:", err)
+	}
+	fmt.Println("WorkQueue: add2 ")
+
 }
