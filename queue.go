@@ -1,9 +1,12 @@
 package rd
 
-import "log"
+import (
+	"errors"
+	"log"
+)
 
 type Args struct {
-	A, B int
+	QueueName string
 }
 
 type PubRet struct {
@@ -31,12 +34,23 @@ func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
 	return nil
 }
 
-func (t *WorkQueue) Consume(args *Args, reply *int) error {
-	*reply = args.A * args.B
-	return nil
+func (t *WorkQueue) Consume(args *Args, reply *[]byte) error {
+
+	if retCh, exist := workQ[args.QueueName]; exist {
+		*reply = <-retCh
+		return nil
+	}
+	return errors.New("New err")
 }
 
 func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
+
+	PdQueue.Publish(args.QValue, args.QName)
+
+	//Do something here
+	someRet := []byte("VALUE")
+	PdQueue.Publish(someRet, args.QResponseName)
+
 	return nil
 }
 
