@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/rpc"
@@ -8,64 +9,65 @@ import (
 	rd "github.com/kkdai/rd"
 )
 
-func main() {
-
-	client, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
-	if err != nil {
-		log.Fatal("dialing:", err)
-	}
-	// Synchronous call
-	args1 := &rd.QArgs{QueueName: "Work1"}
+func QueryRPC(client *rpc.Client, name string) {
+	var err error
+	args := &rd.QArgs{QueueName: name}
 	var reply int
-	err = client.Call("WorkQueue.QueueDeclare", args1, &reply)
+	err = client.Call("WorkQueue.QueueDeclare", args, &reply)
 	if err != nil {
-		log.Fatal("rpc error1:", err)
+		log.Fatal("rpc error:", err)
 	}
-	fmt.Println("WorkQueue: add1 ")
+	fmt.Println("WorkQueue: ", name)
+}
 
-	args2 := &rd.QArgs{QueueName: "Work2"}
-	err = client.Call("WorkQueue.QueueDeclare", args2, &reply)
-	if err != nil {
-		log.Fatal("rpc error2:", err)
-	}
-	fmt.Println("WorkQueue: add2 ")
-
-	//Try to publish data
+func PublishRPC(client *rpc.Client, name string, value []byte) {
+	var err error
 	pReply := &rd.PubRet{}
-	argsP := &rd.PArgs{QName: "Work1", QValue: []byte("test1")}
+	argsP := &rd.PArgs{QName: name, QValue: value}
 	err = client.Call("WorkQueue.Publish", argsP, &pReply)
 	if err != nil {
-		log.Fatal("rpc error3:", err)
+		log.Fatal("rpc error:", err)
 	}
-	fmt.Println("Publish to Work1")
+	fmt.Println("Publish ", string(value), " to ", name, " done.")
+}
 
-	//Try to push again
-	pReply = &rd.PubRet{}
-	argsP = &rd.PArgs{QName: "Work1", QValue: []byte("test2")}
-	err = client.Call("WorkQueue.Publish", argsP, &pReply)
-	if err != nil {
-		log.Fatal("rpc error3:", err)
-	}
-	fmt.Println("Publish to Work1")
-
-	argsP2 := &rd.PArgs{QName: "Work2", QValue: []byte("test2")}
-	err = client.Call("WorkQueue.Publish", argsP2, &pReply)
-	if err != nil {
-		log.Fatal("rpc error4:", err)
-	}
-	fmt.Println("Publish to Work2")
-
-	//Get some consume
-	argsC := &rd.ConsumeArgs{QueueName: "Work1"}
+func ConsumeRPC(client *rpc.Client, name string) {
+	var err error
+	argsC := &rd.ConsumeArgs{QueueName: name}
 	retC := &rd.ConsumeRet{}
 
 	err = client.Call("WorkQueue.Consume", argsC, &retC)
 	if err != nil {
-		log.Fatal("rpc error5:", err)
+		log.Fatal("rpc error:", err)
 	}
-	fmt.Println("Consume to Work1:", retC)
+	fmt.Println("Consume from ", name, ":", retC)
 
 	for _, v := range retC.ReturnValue {
 		fmt.Println(" value:", string(v))
+	}
+}
+
+func main() {
+	var cmd, param1, param2 string
+	flag.Parse()
+	cmd = flag.Arg(0)
+	param1 = flag.Arg(1)
+	param2 = flag.Arg(2)
+
+	fmt.Println(cmd, param1, param2)
+	client, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
+	if err != nil {
+		log.Fatal("dialing:", err)
+	}
+
+	switch cmd {
+	case "Q", "q":
+		QueryRPC(client, param1)
+	case "P", "p":
+		PublishRPC(client, param1, []byte(param2))
+	case "C", "c":
+		ConsumeRPC(client, param1)
+	default:
+		fmt.Println("Please check your parameter")
 	}
 }
