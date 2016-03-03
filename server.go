@@ -43,10 +43,8 @@ func inLoop() {
 
 	//Infinite to read data
 	for {
-		for k, v := range workQ {
-			Lock.RLock()
-			defer Lock.Unlock()
 
+		for k, v := range workQ {
 			select {
 			case newV := <-v:
 				log.Println("[rd][Loop] Get topic:", k, " data=", string(newV))
@@ -66,4 +64,5 @@ func inLoop() {
 			}
 		}
 	}
+	log.Fatal("Loop Exit")
 }

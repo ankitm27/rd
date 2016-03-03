@@ -29,11 +29,15 @@ type QArgs struct {
 }
 
 func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
-	log.Println("Got QueueDeclare: args=", *args, " total=", workQ)
+	log.Println("[rd] Got QueueDeclare: args=", *args, " total=", workQ)
 
 	Lock.RLock()
 	defer Lock.RLock()
 
+	if _, exist := workQ[args.QueueName]; exist {
+		log.Println("[rd] Topic already exist .... ")
+		return nil
+	}
 	retCh := PdQueue.Subscribe(args.QueueName)
 	workQ[args.QueueName] = retCh
 
@@ -44,11 +48,10 @@ func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
 func (t *WorkQueue) Consume(args *ConsumeArgs, reply *ConsumeRet) error {
 	Lock.RLock()
 	defer Lock.RUnlock()
-	var empty []Data
 	if vSlice, exist := workSlice[args.QueueName]; exist {
 		reply.ReturnValue = vSlice
 		log.Println("[rd][consume]  total data len ", len(vSlice))
-		workSlice[args.QueueName] = empty
+		delete(workSlice, args.QueueName)
 		return nil
 	}
 
@@ -60,9 +63,6 @@ func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
 	PdQueue.Publish(args.QValue, args.QName)
 
 	//Do something here
-	someRet := []byte("VALUE")
-	PdQueue.Publish(someRet, args.QResponseName)
-
 	return nil
 }
 
