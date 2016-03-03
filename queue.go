@@ -1,12 +1,15 @@
 package rd
 
-import (
-	"errors"
-	"log"
-)
+import "log"
 
-type Args struct {
+type Data []byte
+
+type ConsumeArgs struct {
 	QueueName string
+}
+
+type ConsumeRet struct {
+	ReturnValue []Data
 }
 
 type PubRet struct {
@@ -28,23 +31,32 @@ type QArgs struct {
 func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
 	log.Println("Got QueueDeclare: args=", *args, " total=", workQ)
 
+	Lock.RLock()
+	defer Lock.RLock()
+
 	retCh := PdQueue.Subscribe(args.QueueName)
 	workQ[args.QueueName] = retCh
 
 	return nil
 }
 
-func (t *WorkQueue) Consume(args *Args, reply *[]byte) error {
-
-	if retCh, exist := workQ[args.QueueName]; exist {
-		*reply = <-retCh
+//Consume : Read current data from server, it is non-channel code. So only read what we have for now
+func (t *WorkQueue) Consume(args *ConsumeArgs, reply *ConsumeRet) error {
+	Lock.RLock()
+	defer Lock.RUnlock()
+	var empty []Data
+	if vSlice, exist := workSlice[args.QueueName]; exist {
+		reply.ReturnValue = vSlice
+		log.Println("[rd][consume]  total data len ", len(vSlice))
+		workSlice[args.QueueName] = empty
 		return nil
 	}
-	return errors.New("New err")
+
+	*reply = ConsumeRet{}
+	return nil
 }
 
 func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
-
 	PdQueue.Publish(args.QValue, args.QName)
 
 	//Do something here
@@ -54,7 +66,10 @@ func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
 	return nil
 }
 
-func (t *WorkQueue) ListQueue(args *int, reply *int) error {
+func (t *WorkQueue) ListCount(args *int, reply *int) error {
+	Lock.RLock()
+	defer Lock.RUnlock()
+
 	*reply = len(PdQueue.ListTopics())
 	return nil
 }
