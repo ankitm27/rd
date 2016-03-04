@@ -4,7 +4,7 @@ RD: A simple RPC Message Queue Server/Client with DiskQueue
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kkdai/rd/master/LICENSE)  [![GoDoc](https://godoc.org/github.com/kkdai/rd?status.svg)](https://godoc.org/github.com/kkdai/rd)  [![Build Status](https://travis-ci.org/kkdai/rd.svg?branch=master)](https://travis-ci.org/kkdai/rd)
     
 
-**RD** 
+**RD** RD is a RPC client/server to implement Message Queue which support pubsub. Because of RPC communication protocol, we use `Consume` to get all message until now.
 
 Install
 ---------------
@@ -93,21 +93,29 @@ Evan:client c w1
 >> c w1
 >> 2016/03/04 09:04:41 Consume from  w1 : &{[]}
 
-// Evan:@rd$go run client/main.go p w1 1234
-// p w1 1234
-// 2016/03/04 09:04:49 Publish  1234  to  w1  done.
-// Evan:@rd$go run client/main.go p w1 23
-// p w1 23
-// 2016/03/04 09:04:54 Publish  23  to  w1  done.
-// Evan:@rd$go run client/main.go p w1 45
-// p w1 45
-// 2016/03/04 09:04:58 Publish  45  to  w1  done.
-// Evan:@rd$go run client/main.go c w1
-// c w1
-// 2016/03/04 09:05:02 Consume from  w1 : &{[[49 50 51 52] [50 51] [52 53]]}
-// 2016/03/04 09:05:02  value: 1234
-// 2016/03/04 09:05:02  value: 23
-// 2016/03/04 09:05:02  value: 45
+//Publish data "1234" to w1
+Evan:client p w1 1234
+>> p w1 1234
+>> 2016/03/04 09:04:49 Publish  1234  to  w1  done.
+
+//Publish data "23" to w1
+Evan:client p w1 23
+>> p w1 23
+>> 2016/03/04 09:04:54 Publish  23  to  w1  done.
+
+//Publish data "45" to w1
+Evan:client p w1 45
+>> p w1 45
+>> 2016/03/04 09:04:58 Publish  45  to  w1  done.
+
+
+//Consume data from w1 until now
+Evan:client c w1
+>> c w1
+>> 2016/03/04 09:05:02 Consume from  w1 : &{[[49 50 51 52] [50 51] [52 53]]}
+>> 2016/03/04 09:05:02  value: 1234
+>> 2016/03/04 09:05:02  value: 23
+>> 2016/03/04 09:05:02  value: 45
 ```
 
 Inspired
