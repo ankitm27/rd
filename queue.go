@@ -33,18 +33,18 @@ type WorkQueue struct {
 
 //QueueDeclare Query the Queue if exist, if not will declare a new one
 func (t *WorkQueue) QueueDeclare(args *QueryArgs, reply *int) error {
-	log.Println("[rd] Got QueueDeclare: args=", *args, " total=", workQ)
+	log.Println("[rd] Got QueueDeclare: args=", *args, " total=", queueMapChan)
 
-	Lock.RLock()
-	defer Lock.RLock()
+	rlock.RLock()
+	defer rlock.RLock()
 
-	if _, exist := workQ[args.QueueName]; exist {
+	if _, exist := queueMapChan[args.QueueName]; exist {
 		log.Println("[rd] Topic already exist .... ")
 		*reply = 1
 		return nil
 	}
-	retCh := PdQueue.Subscribe(args.QueueName)
-	workQ[args.QueueName] = retCh
+	retCh := pubsubObj.Subscribe(args.QueueName)
+	queueMapChan[args.QueueName] = retCh
 	*reply = 0
 
 	return nil
@@ -52,12 +52,12 @@ func (t *WorkQueue) QueueDeclare(args *QueryArgs, reply *int) error {
 
 //Consume : Read current data from server, it is non-channel code. So only read what we have for now
 func (t *WorkQueue) Consume(args *ConsumeArgs, reply *ConsumeRet) error {
-	Lock.RLock()
-	defer Lock.RUnlock()
-	if vSlice, exist := workSlice[args.QueueName]; exist {
+	rlock.RLock()
+	defer rlock.RUnlock()
+	if vSlice, exist := queueMapData[args.QueueName]; exist {
 		reply.ReturnValue = vSlice
 		log.Println("[rd][consume]  total data len ", len(vSlice))
-		delete(workSlice, args.QueueName)
+		delete(queueMapData, args.QueueName)
 		return nil
 	}
 
@@ -67,7 +67,7 @@ func (t *WorkQueue) Consume(args *ConsumeArgs, reply *ConsumeRet) error {
 
 //Publish Publish data to Specific Queue
 func (t *WorkQueue) Publish(args *PublishArgs, reply *int) error {
-	PdQueue.Publish(args.QValue, args.QName)
+	pubsubObj.Publish(args.QValue, args.QName)
 
 	//Do something here
 	return nil
@@ -75,9 +75,9 @@ func (t *WorkQueue) Publish(args *PublishArgs, reply *int) error {
 
 //Count Display the count of Queues
 func (t *WorkQueue) Count(args *int, reply *int) error {
-	Lock.RLock()
-	defer Lock.RUnlock()
+	rlock.RLock()
+	defer rlock.RUnlock()
 
-	*reply = len(PdQueue.ListTopics())
+	*reply = len(pubsubObj.ListTopics())
 	return nil
 }
