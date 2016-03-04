@@ -20,7 +20,6 @@ Usage
 
 #### Server side example
 
-Init a local UDP server on port "10001".
 
 ```go
 package main
@@ -40,8 +39,6 @@ func main() {
 ```
 
 #### Client side example
-
-Send UDP socket to server "127.0.0.1:1234"
 
 ```go
 package main
