@@ -15,7 +15,7 @@ var PdQueue *pd.PD
 var workQ map[string]chan []byte
 var workSlice map[string][]Data
 
-func NewServer() {
+func NewServer(port string) {
 	forever := make(chan int)
 
 	//Init data
@@ -26,7 +26,7 @@ func NewServer() {
 	queue := new(WorkQueue)
 	rpc.Register(queue)
 	rpc.HandleHTTP()
-	l, e := net.Listen("tcp", ":1234")
+	l, e := net.Listen("tcp", port)
 	log.Println("start to listen:", l)
 
 	if e != nil {

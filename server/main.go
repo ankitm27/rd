@@ -8,5 +8,7 @@ import (
 
 func main() {
 	log.Println("Server Starting...")
-	rd.NewServer()
+
+	//Init server in port 1234
+	rd.NewServer(":1234")
 }

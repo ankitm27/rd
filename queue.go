@@ -2,33 +2,37 @@ package rd
 
 import "log"
 
+//Data Basic type of Queue data
 type Data []byte
 
+//ConsumeArgs Argment of Consume RPC call
 type ConsumeArgs struct {
 	QueueName string
 }
 
+//ConsumeRet Return Value of Consume RPC call
 type ConsumeRet struct {
 	ReturnValue []Data
 }
 
-type PubRet struct {
-	Quo, Rem int
-}
-
-type WorkQueue struct {
-}
-
-type PArgs struct {
+//PublishArgs Argment of Publish RPC call
+type PublishArgs struct {
 	QName         string
 	QValue        []byte
 	QResponseName string
 }
-type QArgs struct {
+
+//QueryArgs Argment of Query
+type QueryArgs struct {
 	QueueName string
 }
 
-func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
+//WorkQueue RPC call instance
+type WorkQueue struct {
+}
+
+//QueueDeclare Query the Queue if exist, if not will declare a new one
+func (t *WorkQueue) QueueDeclare(args *QueryArgs, reply *int) error {
 	log.Println("[rd] Got QueueDeclare: args=", *args, " total=", workQ)
 
 	Lock.RLock()
@@ -36,10 +40,12 @@ func (t *WorkQueue) QueueDeclare(args *QArgs, reply *int) error {
 
 	if _, exist := workQ[args.QueueName]; exist {
 		log.Println("[rd] Topic already exist .... ")
+		*reply = 1
 		return nil
 	}
 	retCh := PdQueue.Subscribe(args.QueueName)
 	workQ[args.QueueName] = retCh
+	*reply = 0
 
 	return nil
 }
@@ -59,14 +65,16 @@ func (t *WorkQueue) Consume(args *ConsumeArgs, reply *ConsumeRet) error {
 	return nil
 }
 
-func (t *WorkQueue) Publish(args *PArgs, quo *PubRet) error {
+//Publish Publish data to Specific Queue
+func (t *WorkQueue) Publish(args *PublishArgs, reply *int) error {
 	PdQueue.Publish(args.QValue, args.QName)
 
 	//Do something here
 	return nil
 }
 
-func (t *WorkQueue) ListCount(args *int, reply *int) error {
+//Count Display the count of Queues
+func (t *WorkQueue) Count(args *int, reply *int) error {
 	Lock.RLock()
 	defer Lock.RUnlock()
 
